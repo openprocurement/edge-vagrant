@@ -1,0 +1,42 @@
+---
+- block:
+   - name: Copy netdata rpm to remote
+     copy: src=./netdata-1.5.1-1.fc24.x86_64.rpm dest=/home/{{user_name}}/netdata-1.5.1-1.fc24.x86_64.rpm
+
+   - name: Install netdata
+     dnf: name=/home/{{user_name}}/netdata-1.5.1-1.fc24.x86_64.rpm state=present
+
+   - name: Put plugin edge.chart.py
+     template: src=edge.chart.py dest=/usr/libexec/netdata/python.d/edge.chart.py mode=0644
+
+   - name: Put edge.conf
+     template: src=edge.conf dest=/etc/netdata/python.d/edge.conf
+
+   - name: Put netdata.conf
+     template: src=netdata.conf dest=/etc/netdata/netdata.conf
+
+   - name: Put plugin edge_log.chart.py
+     template: src=edge_log.chart.py dest=/usr/libexec/netdata/python.d/edge_log.chart.py mode=0664
+
+   - name: Put edge_log.conf
+     template: src=edge_log.conf dest=/etc/netdata/python.d/edge_log.conf
+
+   - name: Put apps_groups.conf
+     template: src=apps_groups.conf dest=/etc/netdata/apps_groups.conf
+
+   - name: Put python.d.conf
+     template: src=python.d.conf dest=/etc/netdata/python.d.conf
+
+   - name: Change permissions for nginx logs directory
+     file:
+         path: /var/log/nginx
+         mode: 0777
+         recurse: yes
+
+   - name: Start netdata
+     service: name=netdata state=started
+
+   - name: Restart netdata
+     service: name=netdata state=restarted enabled=yes
+  become: yes
+  tags: ['netdata']

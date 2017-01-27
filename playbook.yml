@@ -1,0 +1,8 @@
+---
+- hosts: all
+  vars_files:
+    - vars/edge.yml
+  roles:
+    - common
+    - environment
+    - netdata

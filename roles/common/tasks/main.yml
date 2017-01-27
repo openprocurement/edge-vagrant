@@ -1,0 +1,35 @@
+---
+- block:
+    - name: Install additional packages
+      dnf: name={{ item }} state=present
+      with_items:
+       - python-dnf
+       - libselinux-python
+    - name: Allow 'vagrant' user to have passwordless sudo
+      lineinfile:
+        dest: /etc/sudoers.d/vagrant-nopasswd
+        state: present
+        regexp: '^%vagrant'
+        line: '%vagrant ALL=(ALL) NOPASSWD: ALL'
+    - name: Install ntpd
+      dnf: name=ntp state=present
+    - name: Configure ntpd
+      service: name=ntpd state=started enabled=yes
+    - name: Fix locale error
+      lineinfile:
+        dest: /etc/profile
+        insertafter: EOF
+        line: export LC_ALL=en_US.UTF-8
+    - name: Persistent hostname
+      lineinfile:
+        dest: /etc/cloud/cloud.cfg
+        insertafter: BOF
+        line: |
+           preserve_hostname: true
+      ignore_errors: True
+
+    - name: Install additional packages
+      dnf: name={{ item }} state=present
+      with_items: "{{ packages }}"
+
+  become: yes
