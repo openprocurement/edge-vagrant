@@ -1,0 +1,28 @@
+---
+- block:
+  - name: Enable SEports for EDGE
+    seport: ports={{ ports.edge }} proto=tcp setype=http_port_t state=present
+    become: yes
+
+  - name: Enable SEports for Couchdb
+    seport: ports={{ couchdb_port }} proto=tcp setype=http_port_t state=present
+    become: yes
+
+  - name: Enable SEports for NetData
+    seport: ports=19999 proto=tcp setype=http_port_t state=present
+    become: yes
+
+
+  ignore_errors: True
+
+- name: Start nginx service
+  service: name=nginx state=started
+  become: yes
+
+- name: Copy nginx configuration
+  template: src=nginx.conf dest=/etc/nginx/nginx.conf
+  become: yes
+
+- name: Restart nginx
+  service: name=nginx state=restarted enabled=yes
+  become: yes

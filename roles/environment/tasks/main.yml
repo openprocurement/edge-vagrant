@@ -1,0 +1,15 @@
+---
+  - name: Add user
+    become: yes
+    user: name={{ user_name }} shell=/bin/bash  createhome=yes home=/home/{{ user_name }} state=present
+
+  - block:
+    - include: buildout.yml
+    become: yes
+    become_user: "{{ user_name }}"
+    tags: ['buildout']
+
+  - block:
+    - include: nginx.yml
+    become: yes
+    tags: ['nginx']

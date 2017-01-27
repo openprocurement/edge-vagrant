@@ -1,0 +1,137 @@
+---
+  - name: Setup buildout cache
+    file: path={{ item.value }} state=directory recurse=yes
+    tags:
+    - all
+    with_items:
+      - { option: 'eggs-directory', value: '/home/{{ user_name }}/.buildout/eggs' }
+      - { option: 'download-cache', value: '/home/{{ user_name }}/.buildout/downloads' }
+      - { option: 'extends-cache', value: '/home/{{ user_name }}/.buildout/extends' }
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Put buildout cache config
+    ini_file: dest=/home/{{ user_name }}/.buildout/default.cfg create=yes section=buildout option={{ item.option }} value={{ item.value }} backup=yes
+    tags:
+    - all
+    with_items:
+      - { option: 'eggs-directory', value: '/home/{{ user_name }}/.buildout/eggs' }
+      - { option: 'download-cache', value: '/home/{{ user_name }}/.buildout/downloads' }
+      - { option: 'extends-cache', value: '/home/{{ user_name }}/.buildout/extends' }
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Register database status (Update Task)
+    stat:
+      path: /home/{{ user_name }}/{{ buildout.old_buildout_path }}/var/couchdb/public_db.couch
+    register: db
+    tags:
+    - update
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Stop previous daemon circusd (Update task)
+    shell: bin/circusctl quit
+      chdir=/home/{{ user_name }}/{{ buildout.old_buildout_path }}
+    when: db.stat.exists
+    tags:
+    - update
+    become: yes
+    become_user: "{{ user_name }}"
+    ignore_errors: True
+
+  - name: Backup database (Update Task)
+    shell: cp /home/{{ user_name }}/{{ buildout.old_buildout_path }}/var/couchdb/public_db.couch /home/{{ user_name }}/
+    when: db.stat.exists
+    tags:
+    - update
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Remove old version buildout (Update task)
+    file: path=/home/{{ user_name }}/{{ buildout.old_buildout_path }} state=absent
+    when: db.stat.exists
+    tags:
+    - update
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Update buildout git files
+    git:
+       repo={{ buildout.buildout_repository_path }}
+       dest=/home/{{ user_name }}/{{ buildout.buildout_path }}
+       version={{ buildout.buildout_repository_version }}
+       force=yes
+    tags:
+    - all
+    - git
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Put edge.cfg
+    template: src={{ buildout.buildout_cfg }} dest=/home/{{ user_name }}/{{buildout.buildout_path}}/edge.cfg backup=yes
+    no_log: false
+    tags:
+    - all
+    - cfg
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Is Bootstarped ?
+    shell: test -f /home/{{ user_name }}/{{buildout.buildout_path}}/bin/buildout
+    register: buildout_exists
+    failed_when: False
+    tags:
+    - all
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Run bootstrap
+    shell: python bootstrap.py -c edge.cfg
+      chdir=/home/{{ user_name }}/{{buildout.buildout_path}}
+    when: buildout_exists.rc != 0
+    tags:
+    - all
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Run Buildout
+    shell: bin/buildout -N -c edge.cfg
+      chdir=/home/{{ user_name }}/{{buildout.buildout_path}}
+    register: result
+    ignore_errors: True
+    tags:
+    - all
+    - buildout
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Run Develop Up
+    shell: bin/develop up
+       chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}
+    tags:
+    - all
+    - git
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Create couchdb directory (Update task)
+    file: path=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb recurse=yes state=directory
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Put backup database to buildout (Update task)
+    shell: mv /home/{{ user_name }}/public_db.couch /home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb/{{ couchdb_db }}.couch
+    when: db.stat.exists
+    tags:
+    - update
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Circusd start
+    shell: bin/circusd --daemon
+      chdir=/home/{{ user_name }}/{{buildout.buildout_path}}
+    tags:
+    - all
+    become: yes
+    become_user: "{{ user_name }}"
