@@ -38,7 +38,7 @@ couchdb_db: edge_db
 couchdb_host: 0.0.0.0
 couchdb_port: 5984
 logs_db: logs_db
-tenders_api_server: http://public.api-sandbox.openprocurement.org
+tenders_api_server: https://public.api.openprocurement.org
 tenders_api_version: 2.3
 queue_size: 1001
 client_inc_step_timeout: 0.1
