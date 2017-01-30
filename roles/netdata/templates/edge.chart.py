@@ -8,6 +8,10 @@ try:
     import urllib.request as urllib2
 except ImportError:
     import urllib2
+from socket import error
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 priority = 60000
 retries = 60
@@ -131,6 +135,7 @@ class Service(SimpleService):
                     self.data['not_actual_docs_count'] \
                         = doc['not_actual_docs_count']
                     break
-        except (ValueError, AttributeError):
+        except (Exception, error) as e:
+            logger.info('Error while loading log data: {}'.format(e.message))
             return self.data
         return self.data
