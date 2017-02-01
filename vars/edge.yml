@@ -21,6 +21,7 @@ packages:
    - policycoreutils-python
    - policycoreutils-python-utils
    - nginx
+   - ctorrent
 user_name: litepublic
 buildout:
    buildout_repository_path: https://github.com/openprocurement/openprocurement.buildout.git

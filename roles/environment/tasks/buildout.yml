@@ -125,6 +125,22 @@
     when: db.stat.exists
     tags:
     - update
+    - torrent
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Copy torrent file.
+    copy: src=./db.torrent dest=/home/{{user_name}}/{{buildout.buildout_path}}/var/couchdb/db.torrent
+    tags:
+    - torrent
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Download public database
+    shell: ctorrent -e 0 -E 0.0 db.torrent
+      chdir=/home/{{ user_name }}/{{buildout.buildout_path}}/var/couchdb
+    tags:
+    - torrent
     become: yes
     become_user: "{{ user_name }}"
 
