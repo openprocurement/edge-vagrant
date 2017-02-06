@@ -106,15 +106,6 @@
     become: yes
     become_user: "{{ user_name }}"
 
-  - name: Run Develop Up
-    shell: bin/develop up
-       chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}
-    tags:
-    - all
-    - git
-    become: yes
-    become_user: "{{ user_name }}"
-
   - name: Create couchdb directory (Update task)
     file: path=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb recurse=yes state=directory
     become: yes
@@ -130,14 +121,14 @@
     become_user: "{{ user_name }}"
 
   - name: Copy torrent file.
-    copy: src=./db.torrent dest=/home/{{user_name}}/{{buildout.buildout_path}}/var/couchdb/db.torrent
+    copy: src=./edge-ea_public_sandbox_db.couch.torrent dest=/home/{{user_name}}/{{buildout.buildout_path}}/var/couchdb/edge-ea_public_sandbox_db.couch.torrent
     tags:
     - torrent
     become: yes
     become_user: "{{ user_name }}"
 
   - name: Download public database
-    shell: ctorrent -e 0 -E 0.0 db.torrent
+    shell: ctorrent -s {{ couchdb_db }} -e 0 -E 0.0 edge-ea_public_sandbox_db.couch.torrent
       chdir=/home/{{ user_name }}/{{buildout.buildout_path}}/var/couchdb
     tags:
     - torrent

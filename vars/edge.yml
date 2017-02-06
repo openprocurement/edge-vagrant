@@ -30,16 +30,17 @@ buildout:
    buildout_repository_version: openprocurement.edge.buildout
    buildout_cfg: edge.cfg
 versions:
-   openprocurement_client: 2.0b3
+   openprocurement_client: 2.0b4
+   openprocurement_edge: 1.0.0.dev2
 auth_ini: auth.ini
 ports:
     edge: 6545
     nginx: 80
-couchdb_db: edge_db
+couchdb_db: ea_public_sandbox_db
 couchdb_host: 0.0.0.0
 couchdb_port: 5984
 logs_db: logs_db
-tenders_api_server: http://public.api-sandbox.openprocurement.org
+tenders_api_server: https://public.api-sandbox.ea.openprocurement.org
 tenders_api_version: 2.3
 queue_size: 1001
 client_inc_step_timeout: 0.1
@@ -60,5 +61,5 @@ retry_resource_items_queue_size: -1
 filter_workers_count: 1
 watch_interval: 10
 resource_items_limit: 1000
-resources: [tenders, plans, contracts]
-user_agent: edge_vagrant
+resources: [auctions]
+user_agent: edge_phalanx
