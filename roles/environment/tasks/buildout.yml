@@ -106,15 +106,6 @@
     become: yes
     become_user: "{{ user_name }}"
 
-  - name: Run Develop Up
-    shell: bin/develop up
-       chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}
-    tags:
-    - all
-    - git
-    become: yes
-    become_user: "{{ user_name }}"
-
   - name: Create couchdb directory (Update task)
     file: path=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb recurse=yes state=directory
     become: yes
@@ -125,6 +116,38 @@
     when: db.stat.exists
     tags:
     - update
+    - torrent
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Copy torrent file.
+    copy: src=./{{ torrent_filename }} dest=/home/{{user_name}}/{{buildout.buildout_path}}/var/couchdb/{{ torrent_filename }}
+    tags:
+    - torrent
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Download public database
+    shell: ctorrent -s {{ couchdb_db }}.couch -e 0 -E 0.0 {{ torrent_filename }}
+      chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb
+    tags:
+    - torrent
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Copy db for torrent seed
+    shell: cp {{ couchdb_db }}.couch torrent.couch
+      chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb
+    tags:
+    - torrent
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Start torrent seeding
+    shell: ctorrent -s torrent.couch -d {{ torrent_filename }}
+      chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb
+    tags:
+    - torrent
     become: yes
     become_user: "{{ user_name }}"
 

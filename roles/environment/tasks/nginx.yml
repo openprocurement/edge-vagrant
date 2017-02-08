@@ -12,15 +12,75 @@
     seport: ports=19999 proto=tcp setype=http_port_t state=present
     become: yes
 
+  - name: Enable SEboolean httpd_read_user_content
+    seboolean: name=httpd_read_user_content state=yes persistent=yes
+    become: yes
+
+  - name: Enable SEboolean httpd_enable_homedirs
+    seboolean: name=httpd_enable_homedirs state=yes persistent=yes
+    become: yes
+
 
   ignore_errors: True
 
-- name: Start nginx service
-  service: name=nginx state=started
+- name: Make directory for nginx.conf.d
+  file: path=/home/{{ user_name }}/nginx.conf.d recurse=yes state=directory
+  become: yes
+  become_user: "{{ user_name }}"
+
+- name: Make directory for nginx.default.d
+  file: path=/home/{{ user_name }}/nginx.default.d recurse=yes state=directory
+  become: yes
+  become_user: "{{ user_name }}"
+
+- name: Put base conf.d configuration
+  template: src=edge.nginx.conf.d.conf dest=/etc/nginx/conf.d/edge.nginx.conf
   become: yes
 
-- name: Copy nginx configuration
+- name: Put base default.d configuration
+  template: src=edge.nginx.default.d.conf dest=/etc/nginx/default.d/edge.nginx.conf
+  become: yes
+
+- name: Put nedtata.conf
+  template: src=conf.d/netdata.conf dest=/home/{{ user_name }}/nginx.conf.d/netdata.conf
+  become: yes
+
+- name: Put spore_api_version conf to default.d
+  template: src=default.d/spore.conf dest=/home/{{ user_name }}/nginx.default.d/spore_{{ item.api_version }}.conf
+  with_items: "{{ compatible_versions }}"
+  become: yes
+
+- name: Put configuration for auctions_api_version resource to default.d
+  template: src=default.d/auctions.conf dest=/home/{{ user_name }}/nginx.default.d/auctions_{{ item.api_version }}.conf
+  when: "'auctions' in resources"
+  with_items: "{{ compatible_versions }}"
+  become: yes
+
+- name: Put configuration for contracts_api_version resource to default.d
+  template: src=default.d/contracts.conf dest=/home/{{ user_name }}/nginx.default.d/contracts_{{ item.api_version }}.conf
+  when: "'contracts' in resources"
+  with_items: "{{ compatible_versions }}"
+  become: yes
+
+- name: Put configuration for plans_api_version resource to default.d
+  template: src=default.d/plans.conf dest=/home/{{ user_name }}/nginx.default.d/plans_{{ item.api_version }}.conf
+  when: "'plans' in resources"
+  with_items: "{{ compatible_versions }}"
+  become: yes
+
+- name: Put configuration for tenders_api_version resource to default.d
+  template: src=default.d/tenders.conf dest=/home/{{ user_name }}/nginx.default.d/tenders_{{ item.api_version }}.conf
+  when: "'tenders' in resources"
+  with_items: "{{ compatible_versions }}"
+  become: yes
+
+- name: Copy system nginx configuration
   template: src=nginx.conf dest=/etc/nginx/nginx.conf
+  when: 'replace_base_nginx_conf|bool == True'
+  become: yes
+
+- name: Start nginx service
+  service: name=nginx state=started
   become: yes
 
 - name: Restart nginx
