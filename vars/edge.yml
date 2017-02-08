@@ -31,7 +31,7 @@ buildout:
    buildout_cfg: edge.cfg
 versions:
    openprocurement_client: 2.0b4
-   openprocurement_edge: 1.0.0.dev3
+   openprocurement_edge: 1.0.0.dev4
 auth_ini: auth.ini
 ports:
     edge: 6545
