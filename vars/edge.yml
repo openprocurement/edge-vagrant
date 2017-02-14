@@ -22,7 +22,7 @@ packages:
    - policycoreutils-python-utils
    - nginx
    - ctorrent
-user_name: litepublic
+user_name: edge
 buildout:
    buildout_repository_path: https://github.com/openprocurement/openprocurement.buildout.git
    buildout_path: edge
@@ -41,12 +41,20 @@ compatible_versions:
   - { api_version: 2.3 }
   - { api_version: 2 }
   - { api_version: 0 }
-couchdb_db: public_sandbox_db
+couchdb_db: public_production_db
 couchdb_host: 0.0.0.0
 couchdb_port: 5984
 logs_db: logs_db
-torrent_filename: edge-public_sandbox.couch.torrent
-api_server: http://public.api-sandbox.openprocurement.org
+filename_for_combine: production_prozorro.gz_
+torrent_view_filenames:
+  - { torrent_filename: edge-2ef983ef6156a37de130fabba598557c.view.torrent, filename: 2ef983ef6156a37de130fabba598557c.view }
+  - { torrent_filename: edge-339d465bd2bf0119954d3a26ca9a65d1.view.torrent, filename: 339d465bd2bf0119954d3a26ca9a65d1.view }
+  - { torrent_filename: edge-a1bd089cb0ad688537ba46951ec67ddb.view.torrent, filename: a1bd089cb0ad688537ba46951ec67ddb.view }
+  - { torrent_filename: edge-ccf1afc9b7fdea261c0c820761c5d8d3.view.torrent, filename: ccf1afc9b7fdea261c0c820761c5d8d3.view }
+torrent_db_filenames:
+  - { torrent_filename: edge-production_prozorro_10022017.gz_aa.torrent, filename: production_prozorro.gz_aa }
+  - { torrent_filename: edge-production_prozorro_10022017.gz_ab.torrent, filename: production_prozorro.gz_ab }
+api_server: http://public.api.openprocurement.org
 api_version: 2.3
 queue_size: 1001
 client_inc_step_timeout: 0.1
@@ -68,4 +76,4 @@ filter_workers_count: 1
 watch_interval: 10
 resource_items_limit: 1000
 resources: [contracts,plans,tenders]
-user_agent: edge_prozzoro
+user_agent: my_platform_name

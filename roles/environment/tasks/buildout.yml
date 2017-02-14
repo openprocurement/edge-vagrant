@@ -111,6 +111,11 @@
     become: yes
     become_user: "{{ user_name }}"
 
+  - name: Create couchdb view directory
+    file: path=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb/.{{ couchdb_db }}_design/mrview recurse=yes state=directory
+    become: yes
+    become_user: "{{ user_name }}"
+
   - name: Put backup database to buildout (Update task)
     shell: mv /home/{{ user_name }}/public_db.couch /home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb/{{ couchdb_db }}.couch
     when: db.stat.exists
@@ -120,36 +125,82 @@
     become: yes
     become_user: "{{ user_name }}"
 
-  - name: Copy torrent file.
-    copy: src=./{{ torrent_filename }} dest=/home/{{user_name}}/{{buildout.buildout_path}}/var/couchdb/{{ torrent_filename }}
+  - name: Copy database torrent files.
+    copy: src=./{{ item.torrent_filename }} dest=/home/{{user_name}}/{{buildout.buildout_path}}/var/couchdb/{{ item.torrent_filename }}
     tags:
     - torrent
+    with_items: "{{ torrent_db_filenames }}"
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Copy database views torrent files.
+    copy: src=./{{ item.torrent_filename }} dest=/home/{{user_name}}/{{buildout.buildout_path}}/var/couchdb/{{ item.torrent_filename }}
+    tags:
+    - torrent
+    with_items: "{{ torrent_view_filenames }}"
     become: yes
     become_user: "{{ user_name }}"
 
   - name: Download public database
-    shell: ctorrent -s {{ couchdb_db }}.couch -e 0 -E 0.0 {{ torrent_filename }}
+    shell: ctorrent -s {{ item.filename }} -e 0 -E 0.0 {{ item.torrent_filename }}
+      chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb
+    tags:
+    - torrent
+    with_items: "{{ torrent_db_filenames }}"
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Download database views files
+    shell: ctorrent -s .{{couchdb_db}}_design/mrview/{{ item.filename }} -e 0 -E 0.0 {{ item.torrent_filename }}
+      chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb
+    tags:
+    - torrent
+    with_items: "{{ torrent_view_filenames }}"
+    become: yes
+    become_user: "{{ user_name }}"
+
+
+  - name: Copy views files for seeding
+    shell: cp .{{couchdb_db}}_design/mrview/{{ item. filename }} {{item.filename}}
+      chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb
+    tags:
+      - torrent
+    with_items: "{{ torrent_view_filenames }}"
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Start database torrents seeding
+    shell: ctorrent -s {{ item.filename }} -d {{ item.torrent_filename }}
+      chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb
+    tags:
+    - torrent
+    with_items: "{{ torrent_db_filenames }}"
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Start database views torrents seeding
+    shell: ctorrent -s {{ item.filename }} -d {{ item.torrent_filename }}
+      chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb
+    tags:
+    - torrent
+    with_items: "{{ torrent_view_filenames }}"
+    become: yes
+    become_user: "{{ user_name }}"
+
+  - name: Combine downloaded files
+    shell: cat {{ filename_for_combine }}* > {{couchdb_db}}.couch.gz
       chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb
     tags:
     - torrent
     become: yes
     become_user: "{{ user_name }}"
 
-  - name: Copy db for torrent seed
-    shell: cp {{ couchdb_db }}.couch torrent.couch
+  - name: Decompress database
+    shell: gzip -d {{couchdb_db}}.couch.gz
       chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb
     tags:
     - torrent
     become: yes
-    become_user: "{{ user_name }}"
-
-  - name: Start torrent seeding
-    shell: ctorrent -s torrent.couch -d {{ torrent_filename }}
-      chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb
-    tags:
-    - torrent
-    become: yes
-    become_user: "{{ user_name }}"
 
   - name: Circusd start
     shell: bin/circusd --daemon

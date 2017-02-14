@@ -1,7 +1,7 @@
 # edge-vagrant
-## System requirements (sandbox):
+## System requirements (production):
 * RAM: 2GB;
-* HDD: 10 GB;
+* HDD: 30 GB;
 * CPU: DualCore
 
 ## Requirements:
@@ -26,8 +26,8 @@ API data available on:
 ```
 http://127.0.0.1:10001/api/2.3/<resource>
 ```
-`resource` can be `tenders`, `plans`, `contracts`, `auctions`
+`<resource>` can be `tenders`, `plans`, `contracts`, `auctions`
 
-Edge activity avaliable on `http:/127.0.0.1:10001/` or `http://127.0.0.1:10009`
+Edge activity avaliable on `http:/127.0.0.1:10001/`
 
 More informations: https://www.vagrantup.com/docs/providers/
