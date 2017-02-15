@@ -161,7 +161,7 @@
 
 
   - name: Copy views files for seeding
-    shell: cp .{{couchdb_db}}_design/mrview/{{ item. filename }} {{item.filename}}
+    shell: cp .{{couchdb_db}}_design/mrview/{{ item.filename }} {{item.filename}}
       chdir=/home/{{ user_name }}/{{ buildout.buildout_path }}/var/couchdb
     tags:
       - torrent
