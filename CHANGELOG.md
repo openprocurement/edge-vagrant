@@ -1,6 +1,6 @@
-#Change log:
+# Change log:
 
-##[1.0.0dev5] - 2017-03-23
+## [1.0.0dev5] - 2017-03-23
 ### Added EDGE:
 - Slow clients sifted out
 ### Added MONITORING:
