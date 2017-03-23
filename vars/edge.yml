@@ -22,7 +22,7 @@ packages:
    - policycoreutils-python-utils
    - nginx
    - ctorrent
-user_name: litepublic
+user_name: edge
 buildout:
    buildout_repository_path: https://github.com/openprocurement/openprocurement.buildout.git
    buildout_path: edge
@@ -30,8 +30,8 @@ buildout:
    buildout_repository_version: openprocurement.edge.buildout
    buildout_cfg: edge.cfg
 versions:
-   openprocurement_client: 2.0b4
-   openprocurement_edge: 1.0.0.dev4
+   openprocurement_client: 2.0b6
+   openprocurement_edge: 1.0.0.dev5
 auth_ini: auth.ini
 ports:
     edge: 6545
@@ -45,7 +45,18 @@ couchdb_db: public_sandbox_db
 couchdb_host: 0.0.0.0
 couchdb_port: 5984
 logs_db: logs_db
-torrent_filename: edge-public_sandbox.couch.torrent
+netdata: netdata-1.5.1-1.fc24.x86_64.rpm
+filename_for_combine: sandbox_prozorro.gz_
+torrent_view_filenames:
+  - { torrent_filename: 1.0.0dev5-2ef983ef6156a37de130fabba598557c.view.torrent, filename: 2ef983ef6156a37de130fabba598557c.view }
+  - { torrent_filename: 1.0.0dev5-3e823c2a4383ac0c18d4e574135a5b08.view.torrent, filename: 3e823c2a4383ac0c18d4e574135a5b08.view }
+  - { torrent_filename: 1.0.0dev5-32d2d8a3909eab23afabcb19bd8234a2.view.torrent, filename: 32d2d8a3909eab23afabcb19bd8234a2.view }
+  - { torrent_filename: 1.0.0dev5-339d465bd2bf0119954d3a26ca9a65d1.view.torrent, filename: 339d465bd2bf0119954d3a26ca9a65d1.view }
+  - { torrent_filename: 1.0.0dev5-a1bd089cb0ad688537ba46951ec67ddb.view.torrent, filename: a1bd089cb0ad688537ba46951ec67ddb.view }
+  - { torrent_filename: 1.0.0dev5-c789ed6807e7819921efdec552da045a.view.torrent, filename: c789ed6807e7819921efdec552da045a.view }
+  - { torrent_filename: 1.0.0dev5-ccf1afc9b7fdea261c0c820761c5d8d3.view.torrent, filename: ccf1afc9b7fdea261c0c820761c5d8d3.view }
+torrent_db_filenames:
+  - { torrent_filename: 1.0.0dev5-prozorro_sandbox_23032017.gz_aa.torrent, filename: sandbox_prozorro.gz_aa }
 api_server: http://public.api-sandbox.openprocurement.org
 api_version: 2.3
 queue_size: 1001
@@ -68,4 +79,4 @@ filter_workers_count: 1
 watch_interval: 10
 resource_items_limit: 1000
 resources: [contracts,plans,tenders]
-user_agent: edge_prozzoro
+user_agent: my_platform_name

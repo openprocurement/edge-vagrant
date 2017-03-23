@@ -1,10 +1,10 @@
 ---
 - block:
    - name: Copy netdata rpm to remote
-     copy: src=./netdata-1.5.1-1.fc24.x86_64.rpm dest=/home/{{user_name}}/netdata-1.5.1-1.fc24.x86_64.rpm
+     copy: src=./{{ netdata }} dest=/home/{{user_name}}/{{ netdata }}
 
    - name: Install netdata
-     dnf: name=/home/{{user_name}}/netdata-1.5.1-1.fc24.x86_64.rpm state=present
+     dnf: name=/home/{{user_name}}/{{ netdata }} state=present
 
    - name: Put plugin edge.chart.py
      template: src=edge.chart.py dest=/usr/libexec/netdata/python.d/edge.chart.py mode=0644
