@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 # Description: Edge log netdata python.d module
+# Requirements:
+# openprocurement_client == 2.0b6
+# openprocurement.edge == 1.0.0dev5
 
-
-from base import SimpleService
 import json
+from base import SimpleService
 try:
     import urllib.request as urllib2
 except ImportError:
@@ -17,14 +19,25 @@ priority = 60000
 retries = 60
 update_every = 10
 
-ORDER = ['queues', 'workers', 'problem_docs', 'process_documents']
+ORDER = [
+    'queues',
+    'workers',
+    'clients',
+    'requests',
+    'problem_docs',
+    'process_documents',
+    'timeshift',
+    'sync_queue',
+    'sync_last_response',
+    'sync_get_items'
+]
 CHARTS = {
     'process_documents': {
         'options': [None, 'Processing', 'documents', 'Processing',
                     '', 'line'],
         'lines': [
-            ['save', 'saved', 'absolute', 1, 1],
-            ['update', 'updated', 'absolute', 1, 1],
+            ['save_documents', 'saved', 'absolute', 1, 1],
+            ['update_documents', 'updated', 'absolute', 1, 1],
             ['skiped', 'skiped', 'absolute', 1, 1],
             ['droped', 'droped', 'absolute', 1, 1],
             ['add_to_resource_items_queue', 'add to queue', 'absolute', 1, 1]
@@ -39,8 +52,7 @@ CHARTS = {
         ]
     },
     'problem_docs': {
-        'options': [None, 'Documents', 'documents', 'Documents',
-                    '', 'line'],
+        'options': [None, 'Documents', 'documents', 'Documents', '', 'line'],
         'lines': [
             ['not_actual_docs_count', 'not actual', 'absolute', 1, 1],
             ['not_found_count', 'not found', 'absolute', 1, 1],
@@ -53,6 +65,46 @@ CHARTS = {
             ['resource_items_queue_size', 'main queue', 'absolute', 1, 1],
             ['retry_resource_items_queue_size', 'retry queue', 'absolute', 1, 1]
         ]
+    },
+    'clients': {
+        'options': [None, 'Clients', 'clients', 'Clients', '', 'line'],
+        'lines': [['api_clients_count', 'clients', 'absolute', 1, 1]]
+    },
+    'requests': {
+        'options': [None, 'Request durations', 'miliseconds', 'Request durations', '', 'area'],
+        'lines': [
+            ['max_avg_request_duration', 'max avg.', 'absolute', 1, 1],
+            ['avg_request_duration', 'avg.', 'absolute', 1, 1],
+            ['request_dev', 'avg. + stdev', 'absolute', 1, 1],
+            ['min_avg_request_duration', 'min avg.', 'absolute', 1, 1]
+        ]
+    },
+    'timeshift': {
+        'options': [None, 'Delay', 'seconds', 'Time delay', '', 'line'],
+        'lines': [
+            ['timeshift', 'delay', 'absolute', 1, 1]
+        ]
+    },
+    'sync_queue': {
+        'options': [None, 'Sync Queue', 'items', 'Sync queue size', '', 'line'],
+        'lines': [
+            ['sync_queue', 'size', 'absolute', 1, 1]
+        ]
+    },
+    'sync_last_response': {
+        'options': [None, 'Sync last response', 'seconds', 'Sync last response', '', 'line'],
+        'lines': [
+            ['sync_forward_last_response', 'forward', 'absolute', 1, 1],
+            ['sync_backward_last_response', 'backward', 'absolute', 1, 1]
+        ]
+    },
+    'sync_get_items': {
+        'options': [None, 'Sync response items count', 'items', 'Sync response items count', '',
+                    'line'],
+        'lines': [
+            ['sync_forward_response_len', 'forward', 'absolute', 1, 1],
+            ['sync_backward_response_len', 'backward', 'absolute', 1, 1]
+        ]
     }
 }
 
@@ -61,15 +113,14 @@ class Service(SimpleService):
     def __init__(self, configuration=None, name=None):
         SimpleService.__init__(self, configuration=configuration, name=name)
         self.couch_url = configuration['couch_url']
-        self.couch_url_args = '/_changes?descending=true&limit=20&include_docs=true'
         self.resource = configuration['resource']
         if len(self.couch_url) == 0:
             raise Exception('Invalid couch_url')
         self.order = ORDER
         self.definitions = CHARTS
         self.data = {
-            'save': 0,
-            'update': 0,
+            'save_documents': 0,
+            'update_documents': 0,
             'workers_count': 0,
             'resource_items_queue_size': 0,
             'free_api_clients': 0,
@@ -82,60 +133,38 @@ class Service(SimpleService):
             'not_found_count': 0,
             'add_to_retry': 0,
             'retry_workers_count': 0,
-            'not_actual_docs_count': 0
+            'not_actual_docs_count': 0,
+            'timeshift': 0,
+            'sync_queue': 0,
+            'sync_forward_response_len': 0,
+            'sync_backward_response_len': 0,
+            'sync_forward_last_response': 0,
+            'sync_backward_last_response': 0,
+            'avg_request_duration': 0,
+            'request_dev': 0,
+            'api_clients_count': 0,
+            'min_avg_request_duration': 0,
+            'max_avg_request_duration': 0
         }
-        self.seq = 0
-        self.repeat_seq_count = 0
+        self.last_time = ''
+        self.same_data_count = 0
 
     def _get_data(self):
-        self.data['save'] = 0
-        self.data['update'] = 0
-        self.data['workers_count'] = 0
-        self.data['resource_items_queue_size'] = 0
-        self.data['exceptions_count'] = 0
-        self.data['add_to_resource_items_queue'] = 0
-        self.data['skiped'] = 0
-        self.data['droped'] = 0
-        self.data['workers_count'] = 0
-        self.data['retry_resource_items_queue_size'] = 0
-        self.data['filter_workers_count'] = 0
-        self.data['not_found_count'] = 0
-        self.data['add_to_retry'] = 0
-        self.data['retry_workers_count'] = 0
-        self.data['not_actual_docs_count'] = 0
-
+        for key in self.data.keys():
+            self.data[key] = 0
         try:
-            response = urllib2.urlopen(self.couch_url +
-                                       self.couch_url_args).read()
-            docs = json.loads(response)['results']
-            for d in reversed(docs):
-                if d['doc']['resource'] == self.resource \
-                        and d['seq'] > self.seq:
-                    self.seq = d['seq']
-                    doc = d['doc']
-                    self.data['workers_count'] = doc['workers_count']
-                    self.data['resource_items_queue_size'] \
-                        = doc['resource_items_queue_size']
-                    self.data['exceptions_count'] = doc['exceptions_count']
-                    self.data['save'] = doc['save_documents']
-                    self.data['add_to_resource_items_queue'] \
-                        = doc['add_to_resource_items_queue']
-                    self.data['skiped'] = doc['skiped']
-                    self.data['droped'] = doc['droped']
-                    self.data['workers_count'] = doc['workers_count']
-                    self.data['retry_resource_items_queue_size'] \
-                        = doc['retry_resource_items_queue_size']
-                    self.data['filter_workers_count'] \
-                        = doc['filter_workers_count']
-                    self.data['not_found_count'] = doc['not_found_count']
-                    self.data['update'] = doc['update_documents']
-                    self.data['add_to_retry'] = doc['add_to_retry']
-                    self.data['retry_workers_count'] \
-                        = doc['retry_workers_count']
-                    self.data['not_actual_docs_count'] \
-                        = doc['not_actual_docs_count']
-                    break
-        except (Exception, error) as e:
-            logger.info('Error while loading log data: {}'.format(e.message))
+            response = urllib2.urlopen(self.couch_url + '/' +
+                                       self.resource).read()
+            doc = json.loads(response)
+            if doc['time'] == self.last_time and self.same_data_count > 3:
+                return self.data
+            if doc['time'] == self.last_time:
+                self.same_data_count += 1
+            else:
+                self.same_data_count = 0
+                self.last_time = doc['time']
+            for key in self.data.keys():
+                self.data[key] = doc.get(key, 0)
+        except (Exception, error):
             return self.data
         return self.data
